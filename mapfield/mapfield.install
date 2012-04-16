@@ -1,0 +1,42 @@
+<?php
+
+/**
+ * @file
+ * Implement CCK's install/uninstall hooks.
+ */
+
+/**
+ * Implementation of hook_install().
+ */
+function mapfield_install() {
+  drupal_load('module', 'content');
+  content_notify('install', 'mapfield');
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function mapfield_uninstall() {
+  drupal_load('module', 'content');
+  content_notify('uninstall', 'mapfield');
+}
+
+/**
+ * Implementation of hook_enable().
+ *
+ * Notify content module when this module is enabled.
+ */
+function mapfield_enable() {
+  drupal_load('module', 'content');
+  content_notify('enable', 'mapfield');
+}
+
+/**
+ * Implementation of hook_disable().
+ *
+ * Notify content module when this module is disabled.
+ */
+function mapfield_disable() {
+  drupal_load('module', 'content');
+  content_notify('disable', 'mapfield');
+}

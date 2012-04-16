@@ -1,0 +1,254 @@
+<?php
+
+/**
+ * @file
+ * Defines a CCK map field.
+ */
+
+ /*
+function mapfield_init() {
+	if ((arg(0)=='node' && arg(1)=='add') || (arg(2)=='edit')) {
+	  $path = drupal_get_path('module', 'mapfield');
+	  $base = base_path();
+	  drupal_set_html_head('<script src="'. check_url(url('http://maps.google.com/maps/api/js?sensor=false')) .'" type="text/javascript"></script>');
+	  drupal_add_js($path . '/js/jquery-ui-1.8.18.custom.min.js', $type='theme');
+	  
+	  drupal_add_js($path . '/js/dgeoauto.js', $type='theme');
+	  drupal_add_js($path . '/js/dgeoautoInit.js', $type='theme');
+	}
+}*/
+/**
+ * Implementation of hook_field_info().
+ */
+function mapfield_field_info() {
+  return array(
+    'mapfield' => array(
+      'label' => t('Map Field'),
+      'description' => t('Stores map fields and coordinates for exact map rendering.'),
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_field_settings().
+ */
+function mapfield_field_settings($op, $field) {
+  switch ($op) {
+    case 'database columns':
+      return array(
+        'daddress' => array('type' => 'varchar', 'length' => 255, 'not null' => FALSE, 'sortable' => FALSE, 'views' => FALSE),
+		'dlat' => array('type' => 'float', 'length' => 255, 'not null' => FALSE, 'sortable' => FALSE, 'views' => FALSE),
+        'dlon' => array('type' => 'float', 'length' => 255, 'not null' => FALSE, 'sortable' => FALSE, 'views' => FALSE),
+      );
+
+  }
+}
+
+/**
+ * Implementation of hook_content_is_empty().
+ */
+function mapfield_content_is_empty($item, $field) {
+  if (empty($item['textfield'])) {
+    return TRUE;
+  }
+  return FALSE;
+}
+
+/**
+ * Implementation of hook_theme().
+ */
+function mapfield_theme() {
+  return array(
+    'mapfield_formatter_default' => array(
+      'arguments' => array('element' => NULL),
+    ),
+    'mapfield' => array(
+      'arguments' => array('element' => NULL),
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_field_formatter_info().
+ */
+function mapfield_field_formatter_info() {
+  return array(
+    'default' => array(
+      'label' => t('Default'),
+      'field types' => array('mapfield'),
+      'multiple values' => CONTENT_HANDLE_CORE,
+    ),
+  );
+}
+
+/**
+ * Theme function for 'default' example field formatter.
+ *
+ * $element['#item']: the sanitized $delta value for the item,
+ * $element['#field_name']: the field name,
+ * $element['#type_name']: the $node->type,
+ * $element['#formatter']: the $formatter_name,
+ * $element'#node']: the $node,
+ * $element['#delta']: the delta of this item, like '0',
+ *
+ */
+function theme_mapfield_formatter_default($element) {
+  $output = '';
+	$output .= '<div id="d_address" class="mapfield-textfield">' . $element['#item']['daddress'] . '</div>';
+    $output .= '<div id="d_latitude" class="mapfield-textfield">' . $element['#item']['dlat'] . '</div>';
+	$output .= '<div id="d_longitude" class="mapfield-textfield">' . $element['#item']['dlon'] . '</div>';
+  return $output;
+}
+
+/**
+ * FAPI theme for an individual element.
+ */
+function theme_mapfield($element) {
+  // If you want to add CSS (or JS) for this form, here's where you would:
+  // drupal_add_css(drupal_get_path('module', 'mapfield') .'/mapfield.css')
+  $element['daddress']['#id']='daddress';
+  $element['dlat']['#id']='dlatitude';
+  $element['dlon']['#id']='dlongitude';
+  $output = '';
+  $output .= '<div class="mapfield">';
+	$output .= theme('textfield', $element['daddress']);
+	$output .= '<br/><div id="d_map_canvas" style="width:300px; height:300px;"></div></br>';
+    $output .= theme('textfield', $element['dlat']);
+	$output .= theme('textfield', $element['dlon']);
+  $output .= '</div>';
+  return $output;
+}
+
+/**
+ * Check if you are on edit / add page then adds the js necessary 
+ * for the module to work correctly
+*/
+ function mapfield_nodeapi(&$node, $op, $teaser, $page) {
+   switch ($op) 	
+ {
+ case 'prepare':
+ $path = drupal_get_path('module', 'mapfield');
+	  $base = base_path();
+	  drupal_set_html_head('<script src="'. check_url(url('http://maps.google.com/maps/api/js?sensor=false')) .'" type="text/javascript"></script>');
+	  drupal_add_js($path . '/js/jquery-ui-1.8.18.custom.min.js', $type='theme');
+	  
+	  drupal_add_js($path . '/js/dgeoauto.js', $type='theme');
+	  drupal_add_js($path . '/js/dgeoautoInit.js', $type='theme');
+ }
+ }
+
+/**
+ * Implementation of FAPI hook_elements().
+ *
+ * Any FAPI callbacks needed for individual widgets can be declared here,
+ * and the element will be passed to those callbacks for processing.
+ *
+ * Drupal will automatically theme the element using a theme with
+ * the same name as the hook_elements key.
+ *
+ * Autocomplete_path is not used by text_widget but other widgets can use it
+ * (see nodereference and userreference).
+ */
+function mapfield_elements() {
+  $elements = array(
+    'mapfield' => array(
+      '#input' => TRUE,
+      '#process' => array('mapfield_process'),
+    ),
+  );
+  return $elements;
+}
+
+/**
+ * Implementation of hook_widget_info().
+ *
+ * Here we indicate that the content module will handle
+ * the default value and multiple values for these widgets.
+ *
+ * Callbacks can be omitted if default handing is used.
+ * They're included here just so this module can be used
+ * as an example for custom modules that might do things
+ * differently.
+ */
+function mapfield_widget_info() {
+  return array(
+    'mapfield' => array(
+      'label' => 'Map Field',
+      'field types' => array('mapfield'),
+      'multiple values' => CONTENT_HANDLE_CORE,
+    ),
+  );
+}
+
+/**
+ * Implementation of hook_widget().
+ *
+ * Attach a single form element to the form. It will be built out and
+ * validated in the callback(s) listed in hook_elements. We build it
+ * out in the callbacks rather than here in hook_widget so it can be
+ * plugged into any module that can provide it with valid
+ * $field information.
+ *
+ * Content module will set the weight, field name and delta values
+ * for each form element. This is a change from earlier CCK versions
+ * where the widget managed its own multiple values.
+ *
+ * If there are multiple values for this field, the content module will
+ * call this function as many times as needed.
+ *
+ * @param $form
+ *   the entire form array, $form['#node'] holds node information
+ * @param $form_state
+ *   the form_state, $form_state['values'][$field['field_name']]
+ *   holds the field's form values.
+ * @param $field
+ *   the field array
+ * @param $items
+ *   array of default values for this field
+ * @param $delta
+ *   the order of this item in the array of subelements (0, 1, 2, etc)
+ *
+ * @return
+ *   the form item for a single element for this field
+ */
+function mapfield_widget(&$form, &$form_state, $field, $items, $delta = 0) {
+  $element = array(
+    '#type' => $field['widget']['type'],
+    '#default_value' => isset($items[$delta]) ? $items[$delta] : '',
+    '#title' => $field['widget']['label'],
+    '#field' => $field,
+  );
+  return $element;
+}
+
+/**
+ * Process an individual element.
+ *
+ * Build the form element. When creating a form using FAPI #process,
+ * note that $element['#value'] is already set.
+ *
+ * The $fields array is in $form['#field_info'][$element['#field_name']].
+ */
+ 
+function mapfield_process($element, $edit, $form_state, $form) {
+  $element['daddress'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Indirizzo'),
+    '#maxlength' => '255',
+    '#default_value' => isset($element['#value']['daddress']) ? $element['#value']['daddress'] : NULL,
+  );
+   $element['dlat'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Latitudine'),
+    '#maxlength' => '255',
+    '#default_value' => isset($element['#value']['dlat']) ? $element['#value']['dlat'] : NULL,
+  );
+  $element['dlon'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Longitudine'),
+	'#maxlength' => '255',
+    '#default_value' => isset($element['#value']['dlon']) ? $element['#value']['dlon'] : NULL,
+  );
+  return $element;
+}
+

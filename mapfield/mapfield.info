@@ -1,0 +1,7 @@
+name = "Map Field"
+description = "Defines a CCK map field."
+version = "6.x-1.1"
+dependencies[] = content
+dependencies[] = jquery_update
+package = Other
+core = 6.x
